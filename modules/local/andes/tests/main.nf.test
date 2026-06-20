@@ -23,8 +23,6 @@ nextflow_process {
         then {
             assert process.success
             assert path(process.out.id_files_andes.get(0).get(1)).exists()
-            def mods = path("${process.out.get(0)}").parent.resolve('mods.txt')
-            assert workflow.success
         }
     }
 }

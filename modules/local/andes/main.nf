@@ -36,7 +36,6 @@ def andesModLine = { String openmsMod, String kind ->   // kind = 'fix' | 'opt'
 process ANDES {
     tag "$meta.mzml_id"
     label 'process_medium'
-    label 'andes'
 
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
         ( params.andes_container ?: 'oras://ghcr.io/bigbio/andes-sif:0.1.0' ) :
@@ -49,6 +48,7 @@ process ANDES {
     tuple val(meta), path("${mzml_file.baseName}_andes.idparquet"), emit: id_files_andes
     path "versions.yml", emit: versions
     path "*.log",        emit: log
+    path "mods.txt",     emit: mods_file
 
     script:
     def args = task.ext.args ?: ''
@@ -80,6 +80,7 @@ process ANDES {
     def scoreFlag    = params.andes_score == 'strong' ? '--score strong' : '--score rank'
     def chimericFlag = params.andes_chimeric ? '--chimeric' : ''
     def refineFlag   = params.andes_refine   ? '--refine'   : ''
+    def optFlags     = [scoreFlag, chimericFlag, refineFlag].findAll { it }.join(' ')
 
     """
     cat > mods.txt <<'EOF'
@@ -104,13 +105,14 @@ EOF
         --isotope-error-max ${isoMax} \\
         ${precFlag} \\
         --mods mods.txt \\
-        ${scoreFlag} ${chimericFlag} ${refineFlag} \\
+        ${optFlags} \\
         $args \\
         2>&1 | tee ${mzml_file.baseName}_andes.log
 
+    # andes has no --version flag yet; pin until the binary exposes one
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
-        andes: \$(andes --help 2>&1 | head -1 | sed 's/andes: //' || echo "unknown")
+        andes: 0.1.0
     END_VERSIONS
     """
 }
