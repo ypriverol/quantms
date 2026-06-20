@@ -78,6 +78,9 @@ process ANDES {
         meta.variablemodifications.tokenize(',').collect { andesModLine(it.trim(), 'opt') } : []
     def modsContent = (["NumMods=${params.max_mods}"] + fixedLines + varLines).join('\n')
 
+    // andes executable: 'andes' on PATH by default; override (e.g. an absolute path
+    // for a bind-mounted binary) via --andes_bin when the container has no PATH entry
+    def andesBin     = params.andes_bin ?: 'andes'
     def scoreFlag    = params.andes_score == 'strong' ? '--score strong' : '--score rank'
     def chimericFlag = params.andes_chimeric ? '--chimeric' : ''
     def refineFlag   = params.andes_refine   ? '--refine'   : ''
@@ -88,7 +91,7 @@ process ANDES {
 ${modsContent}
 EOF
 
-    andes \\
+    ${andesBin} \\
         --spectrum ${mzml_file} \\
         --database "${database}" \\
         --output-pin ${mzml_file.baseName}_andes.pin \\
