@@ -114,10 +114,13 @@ EOF
         $args \\
         2>&1 | tee ${mzml_file.baseName}_andes.log
 
-    # andes has no --version flag yet; pin until the binary exposes one
-    cat <<-END_VERSIONS > versions.yml
-    "${task.process}":
-        andes: 0.1.0
-    END_VERSIONS
+    # andes has no --version flag yet; pin until the binary exposes one.
+    # NOTE: heredocs are kept at column 0 because the mods.txt body above is
+    # column 0, which defeats Nextflow's stripIndent on this script block; an
+    # indented <<- heredoc would leak its delimiter into versions.yml.
+cat <<END_VERSIONS > versions.yml
+"${task.process}":
+    andes: 0.1.0
+END_VERSIONS
     """
 }
