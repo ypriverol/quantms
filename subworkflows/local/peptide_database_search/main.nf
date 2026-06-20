@@ -3,6 +3,7 @@ include { MSGF_DB_INDEXING } from '../../../modules/local/utils/msgf_db_indexing
 include { MSGF  } from '../../../modules/local/openms/msgf/main'
 include { COMET } from '../../../modules/local/openms/comet/main'
 include { SAGE  } from '../../../modules/local/openms/sage/main'
+include { ANDES } from '../../../modules/local/andes/main'
 include { PSM_CLEAN            } from '../../../modules/local/utils/psm_clean/main'
 include { MSRESCORE_FINE_TUNING} from '../../../modules/local/utils/msrescore_fine_tuning/main'
 include { MSRESCORE_FEATURES   } from '../../../modules/local/utils/msrescore_features/main'
@@ -15,7 +16,7 @@ workflow PEPTIDE_DATABASE_SEARCH {
     ch_expdesign
 
     main:
-    (ch_id_msgf, ch_id_comet, ch_id_sage, ch_versions) = [ channel.empty(), channel.empty(), channel.empty(), channel.empty() ]
+    (ch_id_msgf, ch_id_comet, ch_id_sage, ch_id_andes, ch_versions) = [ channel.empty(), channel.empty(), channel.empty(), channel.empty(), channel.empty() ]
 
     if (params.search_engines.contains("msgf")) {
         MSGF_DB_INDEXING(ch_searchengine_in_db)
@@ -30,6 +31,12 @@ workflow PEPTIDE_DATABASE_SEARCH {
         COMET(ch_mzmls_search.combine(ch_searchengine_in_db))
         ch_versions = ch_versions.mix(COMET.out.versions)
         ch_id_comet = ch_id_comet.mix(COMET.out.id_files_comet)
+    }
+
+    if (params.search_engines.contains("andes")) {
+        ANDES(ch_mzmls_search.combine(ch_searchengine_in_db))
+        ch_versions = ch_versions.mix(ANDES.out.versions)
+        ch_id_andes = ch_id_andes.mix(ANDES.out.id_files_andes)
     }
 
     // sorted mzmls to generate same batch ids when enable cache
@@ -95,10 +102,12 @@ workflow PEPTIDE_DATABASE_SEARCH {
                     if (params.search_engines.contains("sage"))  engine_opts.add("sage")
                     if (params.search_engines.contains("msgf"))  engine_opts.add("msgf")
                     if (params.search_engines.contains("comet")) engine_opts.add("comet")
+                    if (params.search_engines.contains("andes")) engine_opts.add("andes")
                     selected_engine = engine_opts[new Random(2025).nextInt(engine_opts.size())]
 
-                    ch_selected_engine = (selected_engine == "sage") ? ch_id_sage :
-                                        (selected_engine == "msgf") ? ch_id_msgf :
+                    ch_selected_engine = (selected_engine == "sage")  ? ch_id_sage :
+                                        (selected_engine == "msgf")  ? ch_id_msgf :
+                                        (selected_engine == "andes") ? ch_id_andes :
                                         ch_id_comet
 
                     train_datasets = ch_selected_engine
@@ -112,11 +121,11 @@ workflow PEPTIDE_DATABASE_SEARCH {
                     ch_versions = ch_versions.mix(MSRESCORE_FINE_TUNING.out.versions)
 
                     if (params.search_engines.tokenize(",").unique().size() > 1) {
-                        ch_id_msgf.mix(ch_id_comet).mix(ch_id_sage).groupTuple(size: params.search_engines.tokenize(",").unique().size())
+                        ch_id_msgf.mix(ch_id_comet).mix(ch_id_sage).mix(ch_id_andes).groupTuple(size: params.search_engines.tokenize(",").unique().size())
                         .combine(ch_mzmls_search, by: 0)
                         .combine(MSRESCORE_FINE_TUNING.out.model_weight).set{ ch_id_rescoring }
                     } else {
-                        ch_id_msgf.mix(ch_id_comet).mix(ch_id_sage).combine(ch_mzmls_search, by: 0)
+                        ch_id_msgf.mix(ch_id_comet).mix(ch_id_sage).mix(ch_id_andes).combine(ch_mzmls_search, by: 0)
                             .combine(MSRESCORE_FINE_TUNING.out.model_weight).set{ ch_id_rescoring }
                     }
 
@@ -127,11 +136,11 @@ workflow PEPTIDE_DATABASE_SEARCH {
                 }
             } else{
                 if (params.search_engines.tokenize(",").unique().size() > 1) {
-                    ch_id_msgf.mix(ch_id_comet).mix(ch_id_sage).groupTuple(size: params.search_engines.tokenize(",").unique().size())
+                    ch_id_msgf.mix(ch_id_comet).mix(ch_id_sage).mix(ch_id_andes).groupTuple(size: params.search_engines.tokenize(",").unique().size())
                     .combine(ch_mzmls_search, by: 0)
                     .combine(ms2_model_dir).set{ ch_id_rescoring }
                 } else {
-                    ch_id_msgf.mix(ch_id_comet).mix(ch_id_sage).combine(ch_mzmls_search, by: 0)
+                    ch_id_msgf.mix(ch_id_comet).mix(ch_id_sage).mix(ch_id_andes).combine(ch_mzmls_search, by: 0)
                         .combine(ms2_model_dir).set{ ch_id_rescoring }
                 }
                 MSRESCORE_FEATURES(ch_id_rescoring)
@@ -149,19 +158,19 @@ workflow PEPTIDE_DATABASE_SEARCH {
             }
 
         } else if (params.search_engines.tokenize(",").unique().size() > 1) {
-            PSM_CLEAN(ch_id_msgf.mix(ch_id_comet).mix(ch_id_sage).groupTuple(size: params.search_engines.tokenize(",").unique().size()).combine(ch_mzmls_search, by: 0))
+            PSM_CLEAN(ch_id_msgf.mix(ch_id_comet).mix(ch_id_sage).mix(ch_id_andes).groupTuple(size: params.search_engines.tokenize(",").unique().size()).combine(ch_mzmls_search, by: 0))
             ch_id_files_out = PSM_CLEAN.out.idparquet
         } else {
-            ch_id_files_out = ch_id_msgf.mix(ch_id_comet).mix(ch_id_sage)
+            ch_id_files_out = ch_id_msgf.mix(ch_id_comet).mix(ch_id_sage).mix(ch_id_andes)
         }
 
     } else if (params.psm_clean == true) {
-        ch_id_files = ch_id_msgf.mix(ch_id_comet).mix(ch_id_sage)
+        ch_id_files = ch_id_msgf.mix(ch_id_comet).mix(ch_id_sage).mix(ch_id_andes)
         PSM_CLEAN(ch_id_files.combine(ch_mzmls_search, by: 0))
         ch_id_files_out = PSM_CLEAN.out.idparquet
         ch_versions = ch_versions.mix(PSM_CLEAN.out.versions)
     } else {
-        ch_id_files_out = ch_id_msgf.mix(ch_id_comet).mix(ch_id_sage)
+        ch_id_files_out = ch_id_msgf.mix(ch_id_comet).mix(ch_id_sage).mix(ch_id_andes)
     }
 
     emit:
