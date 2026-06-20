@@ -91,6 +91,7 @@ EOF
     andes \\
         --spectrum ${mzml_file} \\
         --database "${database}" \\
+        --output-pin ${mzml_file.baseName}_andes.pin \\
         --output-parquet ${mzml_file.baseName}_andes.idparquet \\
         --threads $task.cpus \\
         --enzyme ${andesEnzyme} \\
