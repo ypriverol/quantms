@@ -1,0 +1,30 @@
+nextflow_process {
+    name "Test Process ANDES"
+    script "../main.nf"
+    process "ANDES"
+    config "./nextflow.config"
+
+    test("BSA mzML produces non-empty idparquet and correct mods.txt") {
+        when {
+            process {
+                """
+                input[0] = [
+                    [ id:'BSA1_F1', mzml_id:'BSA1_F1', enzyme:'Trypsin',
+                      fixedmodifications:'Carbamidomethyl (C)',
+                      variablemodifications:'Oxidation (M)',
+                      precursormasstolerance:10, precursormasstoleranceunit:'ppm',
+                      fragmentmasstolerance:0.05, fragmentmasstoleranceunit:'Da' ],
+                    file(params.test_mzml, checkIfExists: true),
+                    file(params.test_fasta, checkIfExists: true)
+                ]
+                """
+            }
+        }
+        then {
+            assert process.success
+            assert path(process.out.id_files_andes.get(0).get(1)).exists()
+            def mods = path("${process.out.get(0)}").parent.resolve('mods.txt')
+            assert workflow.success
+        }
+    }
+}
