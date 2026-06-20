@@ -60,7 +60,8 @@ process ANDES {
     def andesEnzyme = enzymeMap[meta.enzyme] ?: 'trypsin'
 
     def ntt = (meta.enzyme == 'unspecific cleavage') ? 'non-specific' :
-              (params.num_enzyme_termini == 'fully') ? 'fully' : 'semi'
+              (params.num_enzyme_termini == 'fully') ? 'fully' :
+              (params.num_enzyme_termini == 'none')  ? 'non-specific' : 'semi'
 
     def iso = params.isotope_error_range.split(',')
     def isoMin = iso[0].trim(); def isoMax = iso[1].trim()

@@ -23,6 +23,12 @@ nextflow_process {
         then {
             assert process.success
             assert path(process.out.id_files_andes.get(0).get(1)).exists()
+            def modsFile = path(process.out.mods_file.get(0))
+            assert modsFile.exists()
+            def modsText = modsFile.text
+            assert modsText.contains('NumMods=')
+            assert modsText.contains('Carbamidomethyl')
+            assert modsText.contains('Oxidation')
         }
     }
 }
