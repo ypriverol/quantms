@@ -81,6 +81,15 @@ process ANDES {
     // andes executable: 'andes' on PATH by default; override (e.g. an absolute path
     // for a bind-mounted binary) via --andes_bin when the container has no PATH entry
     def andesBin     = params.andes_bin ?: 'andes'
+
+    // quantms supplies a pre-built target+decoy database (GENERATE_DECOY_DATABASE
+    // or shipped target_decoy FASTA), so andes must NOT generate its own decoys
+    // (--decoy-strategy none) and instead recognize the existing ones by the
+    // pipeline's decoy_string, matched at the configured position.
+    def decoyMatch   = (params.decoy_string_position == 'suffix') ?
+        "--decoy-suffix '${params.decoy_string}'" :
+        "--decoy-prefix '${params.decoy_string}'"
+
     def scoreFlag    = params.andes_score == 'strong' ? '--score strong' : '--score rank'
     def chimericFlag = params.andes_chimeric ? '--chimeric' : ''
     def refineFlag   = params.andes_refine   ? '--refine'   : ''
@@ -94,6 +103,8 @@ EOF
     ${andesBin} \\
         --spectrum ${mzml_file} \\
         --database "${database}" \\
+        --decoy-strategy none \\
+        ${decoyMatch} \\
         --output-pin ${mzml_file.baseName}_andes.pin \\
         --output-parquet ${mzml_file.baseName}_andes.idparquet \\
         --threads $task.cpus \\
