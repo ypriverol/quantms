@@ -19,13 +19,6 @@ process PERCOLATOR {
     def args = task.ext.args ?: ''
     def prefix = task.ext.prefix ?: "${meta.mzml_id}"
 
-    // andes is not an OpenMS-registered engine, so its idparquet carries generic
-    // (additional_scores) features rather than a known engine-specific feature
-    // set; PercolatorAdapter aborts ("No search engine specific features found")
-    // unless told to use the generic features. Gate on the andes filename so
-    // mixed-engine runs keep their engine-specific features for comet/msgf/sage.
-    def genericFeat = id_file.name.contains('andes') ? '-generic_feature_set' : ''
-
     """
     OMP_NUM_THREADS=$task.cpus PercolatorAdapter \\
         -in ${id_file} \\
@@ -36,7 +29,6 @@ process PERCOLATOR {
         -post_processing_tdc \\
         -score_type pep \\
         -score:fdr $params.run_fdr_cutoff \\
-        ${genericFeat} \\
         $args \\
         2>&1 | tee ${id_file.baseName}_percolator.log
 
