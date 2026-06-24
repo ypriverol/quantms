@@ -68,8 +68,8 @@ process ANDES {
 
     // precursor tolerance: ppm vs Da
     def precFlag = (meta.precursormasstoleranceunit == 'ppm') ?
-        "--precursor-tol-ppm ${meta.precursormasstolerance}" :
-        "--precursor-tol-da ${meta.precursormasstolerance}"
+        "--precursor-tol ${meta.precursormasstolerance}ppm" :
+        "--precursor-tol ${meta.precursormasstolerance}da"
 
     // build mods.txt from meta (fixed + variable)
     def fixedLines = meta.fixedmodifications?.trim() ?
@@ -115,10 +115,8 @@ EOF
         --max-length $params.max_peptide_length \\
         --top-n $params.num_hits \\
         --max-mods $params.max_mods \\
-        --charge-min $params.min_precursor_charge \\
-        --charge-max $params.max_precursor_charge \\
-        --isotope-error-min ${isoMin} \\
-        --isotope-error-max ${isoMax} \\
+        --charge ${params.min_precursor_charge}..${params.max_precursor_charge} \\
+        --isotope-error ${isoMin}..${isoMax} \\
         ${precFlag} \\
         --mods mods.txt \\
         ${optFlags} \\
