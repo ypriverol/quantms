@@ -1,0 +1,43 @@
+nextflow_process {
+
+    name "Test Process QPX_OPENMSCONSENSUS"
+    script "../main.nf"
+    process "QPX_OPENMSCONSENSUS"
+    tag "modules"
+    tag "modules_bigbio"
+    tag "modules_qpx"
+    tag "qpx"
+
+    config "./nextflow.config"
+
+    // TODO real-data test: mirror the diann subtool's test once a small OpenMS
+    // consensusXML + SDRF fixture (`<ACC>.zip` with `openms.consensusXML` +
+    // `sample.sdrf.tsv`) is hosted under the PRIDE pmultiqc example-projects, then
+    // add a test that downloads it and asserts qpx_dataset/mudata/versions. The
+    // openms-consensus conversion + MuData build have been validated out-of-band
+    // against the qpx 1.1.1 container on a real 2-replicate consensusXML.
+    test("Should run stub mode") {
+
+        options "-stub"
+
+        when {
+            process {
+                """
+                input[0] = file("stub.consensusXML", checkIfExists: false)
+                input[1] = file("stub_sample.sdrf.tsv", checkIfExists: false)
+                input[2] = "PXD026600"
+                """
+            }
+        }
+
+        then {
+            assert process.success
+            assert process.out.qpx_dataset.size() == 1
+            assert process.out.mudata.size() == 1
+            assert snapshot(
+                process.out.mudata,
+                process.out.versions
+            ).match("stub")
+        }
+    }
+}

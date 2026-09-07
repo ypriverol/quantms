@@ -12,7 +12,7 @@
                     },
                     "qpx/openmsconsensus": {
                         "branch": "main",
-                        "git_sha": "21b7fa083b9400c6a276629fbf3ae8500493d518",
+                        "git_sha": "0e150a75761e379ab1e95c9fb8f0e42164bb5485",
                         "installed_by": ["modules"]
                     },
                     "thermorawfileparser": {
@@ -23,7 +23,7 @@
                     },
                     "pmultiqc": {
                         "branch": "main",
-                        "git_sha": "108392261b83e7e45681c3462a92549ffa1f5db3",
+                        "git_sha": "0e150a75761e379ab1e95c9fb8f0e42164bb5485",
                         "installed_by": ["modules"]
                     }
                 }
